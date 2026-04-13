@@ -29,7 +29,7 @@
       </g>
       <g transform="translate(440, 25)">
         <rect x="-45" y="-15" width="90" height="30" fill="#fef9c3" rx="2" />
-        <text x="0" y="4" fill="#000" font-size="13" font-weight="bold" text-anchor="middle">私有知识</text>
+        <text x="0" y="4" fill="#000" font-size="13" font-weight="bold" text-anchor="middle">内容服务</text>
       </g>
       <g transform="translate(600, 25)">
         <rect x="-45" y="-15" width="90" height="30" fill="#fef9c3" rx="2" />
@@ -76,12 +76,12 @@
       <!-- 3 -->
       <line x1="290" y1="140" x2="425" y2="140" stroke="#f97316" stroke-width="1.5" marker-end="url(#arrowhead)" />
       <rect x="295" y="128" width="125" height="24" fill="#000" />
-      <text x="358" y="144" fill="#e5e5e5" font-size="12" text-anchor="middle">对话: 获取私有知识摘要</text>
+      <text x="358" y="144" fill="#e5e5e5" font-size="12" text-anchor="middle">对话: 获取文档要点摘要</text>
 
       <!-- 4 -->
       <line x1="425" y1="180" x2="295" y2="180" stroke="#f97316" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
       <rect x="295" y="168" width="125" height="24" fill="#000" />
-      <text x="360" y="184" fill="#e5e5e5" font-size="12" text-anchor="middle">返回: 当前私有知识摘要</text>
+      <text x="360" y="184" fill="#e5e5e5" font-size="12" text-anchor="middle">返回: 文档要点摘要</text>
 
       <!-- 5 -->
       <line x1="290" y1="220" x2="585" y2="220" stroke="#f97316" stroke-width="1.5" marker-end="url(#arrowhead)" />

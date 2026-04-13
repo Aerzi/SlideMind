@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local reference PDFs (optional; remove line to track in git)
+docs/*.pdf
