@@ -6,8 +6,8 @@ import type { PipelineReactStep } from '../types/pipelineReactStep'
 import AnalysisAttachmentFiles from './AnalysisAttachmentFiles.vue'
 import IntentClarificationForm from './IntentClarificationForm.vue'
 import DocumentParseTrace from './DocumentParseTrace.vue'
-import PipelineReactSection from './PipelineReactSection.vue'
-import PipelineResultPanel from './PipelineResultPanel.vue'
+import PipelineGraphModal from './PipelineGraphModal.vue'
+import MarkdownBody from './MarkdownBody.vue'
 import { renderMarkdown } from '../utils/markdownRender'
 import { runPptOutlinePipeline, type PptOutlineProgressEvent } from '../agents'
 import { buildSkippedClarifiedIntent } from '../utils/clarifiedIntent'
@@ -33,15 +33,10 @@ const scrollContainer = ref<HTMLElement | null>(null)
 
 const pipelineResult = ref<Record<string, string> | null>(null)
 const pipelineRunning = ref(false)
+const showGraphModal = ref(false)
 const pipelineError = ref<string | null>(null)
 const pipelineSectionTab = ref<'storyline' | 'recall' | 'outline' | 'quality'>('outline')
 
-const pipelineTabs = [
-  { id: 'storyline' as const, label: '故事线' },
-  { id: 'recall' as const, label: '私域召回' },
-  { id: 'outline' as const, label: '终稿大纲' },
-  { id: 'quality' as const, label: '质检' },
-]
 
 const PIPELINE_NODE_META = [
   {
@@ -89,6 +84,8 @@ const PIPELINE_NODE_META = [
 ] as const
 
 const pipelineReactSteps = ref<PipelineReactStep[]>([])
+const pipelineSteps = ref<DocumentParseAgentStep[]>([])
+const isPipelineTraceCollapsed = ref(false)
 
 function formatPipelineObservation(node: string, state: Record<string, unknown>): string {
   const combined = String(state.combinedDocuments ?? '').trim()
@@ -194,6 +191,40 @@ function applyPipelineProgress({ node, state }: PptOutlineProgressEvent) {
     cur.stageDetailOpen = true
   }
 
+  // Update pipelineSteps for continuous trace UI
+  const pSteps = pipelineSteps.value
+  const tNow = Date.now()
+  if (pSteps.length === 4) {
+    if (node === 'retrieve_private_rag') {
+      if (pSteps[0].status !== 'completed') {
+        pSteps[0].status = 'completed'
+        pSteps[0].elapsedMs = tNow - (pSteps[0].startTimeMs || tNow)
+        pSteps[0].isExpanded = false
+        pSteps[1].status = 'running'
+        pSteps[1].startTimeMs = tNow
+        pSteps[1].isExpanded = true
+      }
+    } else if (node === 'generate_deck_pages') {
+      if (pSteps[1].status !== 'completed') {
+        pSteps[1].status = 'completed'
+        pSteps[1].elapsedMs = tNow - (pSteps[1].startTimeMs || tNow)
+        pSteps[1].isExpanded = false
+        pSteps[2].status = 'running'
+        pSteps[2].startTimeMs = tNow
+        pSteps[2].isExpanded = true
+      }
+    } else if (node === 'enrich_design_styles' || node === 'quality_check') {
+      if (pSteps[2].status !== 'completed') {
+        pSteps[2].status = 'completed'
+        pSteps[2].elapsedMs = tNow - (pSteps[2].startTimeMs || tNow)
+        pSteps[2].isExpanded = false
+        pSteps[3].status = 'running'
+        pSteps[3].startTimeMs = tNow
+        pSteps[3].isExpanded = true
+      }
+    }
+  }
+
   scrollToBottom()
 }
 
@@ -256,13 +287,6 @@ const greetingText = computed(() => {
 
 const topicBubble = computed(() => props.topic?.trim() || '（可在上一页补充主题说明）')
 
-const canGeneratePpt = computed(
-  () =>
-    Boolean(
-      pipelineResult.value?.finalOutlineMarkdown &&
-        pipelineResult.value?.pipeline === 'continue',
-    ),
-)
 
 const pipelineTabBody = computed(() => {
   const p = pipelineResult.value
@@ -368,15 +392,16 @@ const startAgentSimulation = async () => {
 
   agentSteps.value = []
 
-  const step1 = { ...steps[0], id: 0 }
+  const step1 = { ...steps[0], id: 0, startTimeMs: Date.now() }
   agentSteps.value.push(step1)
   scrollToBottom()
 
   await new Promise((resolve) => setTimeout(resolve, 600))
   step1.status = 'completed'
+  step1.elapsedMs = Date.now() - step1.startTimeMs
   scrollToBottom()
 
-  const step2 = { ...steps[1], id: 1, status: 'running' }
+  const step2 = { ...steps[1], id: 1, status: 'running', startTimeMs: Date.now() }
   agentSteps.value.push(step2)
   if (step2.action) {
     step2.action.content = '正在根据主题与已解析 Markdown 生成澄清选项…'
@@ -401,6 +426,7 @@ const startAgentSimulation = async () => {
   }
 
   step2.status = 'completed'
+  step2.elapsedMs = Date.now() - step2.startTimeMs
   step2.result = `已根据你的主题${mds.length ? '与素材摘录' : '（未检测到可用正文时仅依据主题）'}生成澄清选项，请在下方确认或调整。`
   if (step2.action) {
     step2.action.content = '意图澄清候选已就绪'
@@ -442,7 +468,81 @@ const intentAnswers = ref<Record<string, string | string[]>>({})
 async function runPipeline(mode: 'confirm' | 'skip') {
   if (pipelineRunning.value) return
   pipelineRunning.value = true
+  showGraphModal.value = true
   pipelineError.value = null
+  
+  isPipelineTraceCollapsed.value = false
+  pipelineSteps.value = [
+    {
+      id: 100,
+      title: '规划中',
+      status: 'running',
+      isExpanded: true,
+      description: '好的，已收到意图确认结果，接下来将为你处理下一步。',
+      thought_title: '已完成思考',
+      showThought: false,
+      startTimeMs: Date.now(),
+    },
+    {
+      id: 101,
+      title: '深度检索',
+      status: 'pending',
+      isExpanded: false,
+      description: '现在我将开始搜索私域文档以及联网资料信息，作为补充内容丰富进一步 PPT 内容。',
+      thought_title: '已完成思考',
+      showThought: false,
+      actions: [
+        { 
+          icon: 'search', 
+          label: '文档检索', 
+          content: '正在检索“小米 SU7 Ultra 最新配置与版本信息”',
+          tags: [
+            { type: 'word', text: '小米 SU7 Ultra 最新配置说明' },
+            { type: 'pdf', text: '小米 SU7 Ultra 白皮书' }
+          ]
+        },
+        { 
+          icon: 'search', 
+          label: '文档检索', 
+          content: '正在检索“小米 SU7 Ultra 价格汇总报告”',
+          tags: [
+            { type: 'word', text: '小米 SU7 Ultra 价格汇总报告' },
+            { type: 'presentation', text: '2023全年塑料市场分析报告汇总' }
+          ]
+        },
+        { 
+          icon: 'search', 
+          label: '联网搜索', 
+          content: '正在搜索“小米 SU7 Ultra”\n私域信息充分，无需公域信息补充' 
+        }
+      ]
+    },
+    {
+      id: 102,
+      title: '内容整合',
+      status: 'pending',
+      isExpanded: false,
+      description: '我已经完成信息的检索，整理出结构化报告，涵盖核心内容。我将基于收集到的丰富信息，开始生成幻灯片大纲。',
+      thought_title: '已完成思考',
+      showThought: false,
+      actions: [
+        { icon: 'idea', label: '生成草稿', content: '整理结构化内容' },
+        { icon: 'document', label: '生成草稿', content: '小米 SU7 Ultra 调研报告_大纲.xml' }
+      ]
+    },
+    {
+      id: 103,
+      title: '大纲生成',
+      status: 'pending',
+      isExpanded: false,
+      description: '现在我将进入大纲生成阶段，将文档信息和意图结果传递给 OutlineAgent。',
+      thought_title: '已完成思考',
+      showThought: false,
+      action: { icon: 'document', label: 'PPT 大纲', content: '正在撰写 PPT 大纲...' },
+    }
+  ]
+  messages.value.push({ type: 'pipeline_trace' })
+
   initPipelineReactSteps()
   try {
     const mds = props.files
@@ -474,11 +574,6 @@ async function runPipeline(mode: 'confirm' | 'skip') {
         text:
           '编排已结束：未满足继续条件（例如素材过短）。请返回上传更多文档或补充主题后重试。',
       })
-    } else {
-      messages.value.push({
-        type: 'ai_text',
-        text: '编排已完成。下方为各阶段 ReAct 记录；右侧可切换「终稿大纲」等标签查看全文。',
-      })
     }
   } catch (e) {
     pipelineError.value = e instanceof Error ? e.message : '请求失败'
@@ -493,6 +588,14 @@ async function runPipeline(mode: 'confirm' | 'skip') {
     })
   } finally {
     pipelineRunning.value = false
+    if (pipelineSteps.value.length === 4) {
+      const last = pipelineSteps.value[3]
+      if (last.status === 'running') {
+        last.status = 'completed'
+        last.elapsedMs = Date.now() - (last.startTimeMs || Date.now())
+        last.result = '完美！OutlineAgent 已成功生成 PPT 大纲，内容结构清晰完整。大纲已生成完毕，整个 PPT 制作流程顺利完成！您可以基于此大纲进行后续的 PPT 制作工作。'
+      }
+    }
     scrollToBottom()
   }
 }
@@ -547,10 +650,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex-1 w-full max-w-[1000px] mt-4 px-4 flex flex-col h-[calc(100vh-80px)] mx-auto relative">
+  <div class="flex w-full h-[calc(100vh-80px)] mt-4 px-4 gap-6 relative transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
     
     <!-- Top Action Bar -->
-    <div class="absolute top-[24px] left-[32px] flex items-center z-20">
+    <div class="absolute top-[0px] left-[16px] flex items-center z-20">
       <button 
         @click="$emit('back')" 
         class="flex items-center gap-1 text-gray-500 hover:text-gray-900 transition-colors text-[14px]"
@@ -562,112 +665,116 @@ onMounted(() => {
       </button>
     </div>
 
-    <div ref="scrollContainer" class="flex-1 overflow-y-auto pb-[160px] pt-[32px] px-[80px] custom-scrollbar relative z-10 flex flex-col items-center scroll-smooth">
-      
-        <div class="w-full max-w-[800px] flex flex-col pt-[32px] mx-auto">
-        <!-- User Message -->
-        <div class="flex flex-col items-end mb-[32px] animate-in fade-in slide-in-from-bottom-4 duration-500 relative w-full">
+    <!-- Left Pane: Outline Preview (Appears when pipeline finishes) -->
+    <div 
+      v-if="pipelineResult" 
+      class="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200/60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-left-8 duration-700 h-[calc(100vh-120px)] mt-8 p-10 flex flex-col"
+    >
+      <div class="text-[20px] font-semibold text-gray-800 mb-6 flex items-center justify-between">
+        PPT 大纲预览
+        <div class="flex gap-2">
+           <button class="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white px-5 py-2.5 rounded-lg text-[14px] font-medium shadow-sm transition-all flex items-center gap-1.5">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M10.5 4.5L12 2l1.5 2.5L16 6l-2.5 1.5L12 10l-1.5-2.5L8 6l2.5-1.5zM19 12.5L20 11l1 1.5L22.5 14l-1.5 1.5L20 17l-1-1.5L17.5 14l1.5-1.5zM6 14.5L7 13l1 1.5L9.5 16l-1.5 1.5L7 19l-1-1.5L4.5 16l1.5-1.5z" />
+            </svg>
+            一键生成 PPT
+          </button>
+        </div>
+      </div>
+      <MarkdownBody :rendered-html="pipelineTabBody" class="prose-slate max-w-none text-[15px]" />
+    </div>
+
+    <!-- Right/Center Pane: Chat Trace -->
+    <div 
+      class="flex flex-col relative transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] h-[calc(100vh-100px)] mt-8 rounded-2xl"
+      :class="pipelineResult ? 'w-[420px] shrink-0 border-l border-gray-200/60 pl-4' : 'flex-1 max-w-[800px] mx-auto w-full'"
+    >
+      <div ref="scrollContainer" class="flex-1 overflow-y-auto pb-[160px] pt-[24px] custom-scrollbar relative z-10 flex flex-col scroll-smooth w-full" :class="pipelineResult ? 'px-2' : 'px-8'">
         
-        <div class="flex items-end gap-3 w-full justify-end mt-[32px]">
-          <div class="flex flex-col items-end gap-3 w-full max-w-[800px] relative z-20">
-
-            <AnalysisAttachmentFiles :files="files" />
-            
-            <!-- Text Bubble -->
-            <div class="bg-[#f2f3f5] text-[#1a1a1a] px-[24px] py-[16px] rounded-[16px] rounded-tr-[4px] text-[15px] leading-[1.6] w-fit max-w-full">
-              {{ topicBubble }}
-            </div>
-          </div>
-      </div>
-      </div>
-
-      <div class="relative pl-[24px] border-l-[1.5px] border-[#e5e7eb] ml-[16px] pb-[40px] w-full mt-[32px]">
-        <template v-for="(msg, index) in messages" :key="index">
-          
-          <!-- AI Greeting -->
-          <div v-if="msg.type === 'ai_greeting'" class="mb-[36px] relative animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-            <!-- Timeline Icon -->
-            <div class="absolute -left-[35px] top-[2px] bg-[#fafafc]">
-              <div class="w-[20px] h-[20px] rounded-[6px] bg-[#f2f3f5] flex items-center justify-center border border-[#e5e7eb]">
-                <svg class="w-[14px] h-[14px] text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+        <div class="w-full flex flex-col mx-auto">
+          <!-- User Message -->
+          <div class="flex flex-col items-end mb-[32px] animate-in fade-in slide-in-from-bottom-4 duration-500 relative w-full">
+            <div class="flex items-end gap-3 w-full justify-end">
+              <div class="flex flex-col items-end gap-3 w-full relative z-20">
+                <AnalysisAttachmentFiles :files="files" />
+                <div class="bg-[#f2f3f5] text-[#1a1a1a] px-[20px] py-[14px] rounded-[16px] rounded-tr-[4px] text-[15px] leading-[1.6] w-fit max-w-full">
+                  {{ topicBubble }}
+                </div>
               </div>
             </div>
-            
-            <!-- Content -->
-          <div v-if="msg.text" class="text-[15px] text-[#1a1a1a] leading-[1.6] w-full relative z-20 mt-[6px]">
-            {{ msg.text }}
           </div>
-            <div class="mt-[10px] text-[13.5px] text-gray-400 flex items-center gap-[6px] relative z-20 font-medium">
-              任务接收完毕
-            </div>
+          
+          <div class="relative pl-[24px] border-l-[1.5px] border-[#e5e7eb] ml-[8px] pb-[40px] w-full mt-[16px]">
+            <template v-for="(msg, index) in messages" :key="index">
+              <!-- AI Greeting -->
+              <div v-if="msg.type === 'ai_greeting'" class="mb-[36px] relative animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+                <div class="absolute -left-[33px] top-[2px] bg-[#fafafc]">
+                  <div class="w-[18px] h-[18px] rounded-[6px] bg-[#f2f3f5] flex items-center justify-center border border-[#e5e7eb]">
+                    <svg class="w-[12px] h-[12px] text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                </div>
+                <div v-if="msg.text" class="text-[14.5px] text-[#1a1a1a] leading-[1.6] w-full relative z-20 mt-[2px]">
+                  {{ msg.text }}
+                </div>
+                <div class="mt-[10px] text-[13.5px] text-gray-400 flex items-center gap-[6px] relative z-20 font-medium">
+                  任务接收完毕
+                </div>
+              </div>
+
+              <DocumentParseTrace
+                v-if="msg.type === 'langgraph_trace'"
+                v-model="isTraceCollapsed"
+                :steps="agentSteps"
+                @toggle-step="toggleStepExpand"
+              />
+
+              <div
+                v-if="msg.type === 'intent_form' && showIntentForm && clarificationForm"
+                class="mb-[36px] relative animate-in fade-in slide-in-from-bottom-4 duration-500 w-full pl-[4px] pr-[16px]"
+              >
+                <IntentClarificationForm
+                  v-model:answers="intentAnswers"
+                  v-model:additionalNotes="intentFormData.additionalInfo"
+                  :form="clarificationForm"
+                  :countdown="formCountdown"
+                  :intent-submitted="isIntentFormSubmitted"
+                  :pipeline-running="pipelineRunning"
+                  @confirm="confirmForm"
+                  @skip="skipForm"
+                  @add-option="onAddIntentOption"
+                />
+              </div>
+
+              <!-- Pipeline Steps Trace -->
+              <DocumentParseTrace
+                v-if="msg.type === 'pipeline_trace'"
+                v-model="isPipelineTraceCollapsed"
+                :steps="pipelineSteps"
+                @toggle-step="togglePipelineStepExpand"
+              />
+
+              <!-- AI Text Message -->
+              <div v-if="msg.type === 'ai_text'" class="mb-[36px] relative animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+                <div class="text-[14.5px] text-[#1a1a1a] leading-[1.6] w-full relative z-20 mt-[6px]">
+                  {{ msg.text }}
+                </div>
+              </div>
+
+            </template>
           </div>
 
-          <DocumentParseTrace
-            v-if="msg.type === 'langgraph_trace'"
-            v-model="isTraceCollapsed"
-            :steps="agentSteps"
-            @toggle-step="toggleStepExpand"
-          />
-
-          <!-- 意图澄清（结构化 JSON → 选择题 / 多选 / 文本） -->
-          <div
-            v-if="msg.type === 'intent_form' && showIntentForm && clarificationForm"
-            class="mb-[36px] relative animate-in fade-in slide-in-from-bottom-4 duration-500 w-full pl-[4px] pr-[16px]"
-          >
-            <IntentClarificationForm
-              v-model:answers="intentAnswers"
-              v-model:additionalNotes="intentFormData.additionalInfo"
-              :form="clarificationForm"
-              :countdown="formCountdown"
-              :intent-submitted="isIntentFormSubmitted"
-              :pipeline-running="pipelineRunning"
-              @confirm="confirmForm"
-              @skip="skipForm"
-              @add-option="onAddIntentOption"
-            />
-          </div>
-
-          <!-- AI Text Message -->
-          <div v-if="msg.type === 'ai_text'" class="mb-[36px] relative animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-            <div class="text-[15px] text-[#1a1a1a] leading-[1.6] w-full relative z-20 mt-[6px]">
-              {{ msg.text }}
-            </div>
-          </div>
-
-        </template>
-
-        <PipelineReactSection
-          :steps="pipelineReactSteps"
-          :get-stage-html="renderStepStageHtml"
-          @toggle-react-expand="togglePipelineReactExpand"
-          @toggle-stage-detail="togglePipelineStageDetail"
-        />
+        </div>
       </div>
-
-      <PipelineResultPanel
-        v-if="pipelineResult"
-        v-model:active-tab="pipelineSectionTab"
-        :headline="`${topic?.trim() || '演示主题'} · 编排输出`"
-        :pipeline-stopped="pipelineResult.pipeline === 'stop'"
-        :rag-queries="ragQueriesList"
-        :tabs="pipelineTabs"
-        :tab-markdown="pipelineTabBody"
-      />
-
-    </div>
     </div>
 
-    <!-- Generate PPT Button (Fixed Bottom) -->
-    <div class="absolute bottom-[40px] left-1/2 -translate-x-1/2 z-20" v-if="canGeneratePpt">
-      <button class="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white px-[48px] py-[12px] rounded-full text-[16px] font-medium shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 tracking-wide w-fit">
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M10.5 4.5L12 2l1.5 2.5L16 6l-2.5 1.5L12 10l-1.5-2.5L8 6l2.5-1.5zM19 12.5L20 11l1 1.5L22.5 14l-1.5 1.5L20 17l-1-1.5L17.5 14l1.5-1.5zM6 14.5L7 13l1 1.5L9.5 16l-1.5 1.5L7 19l-1-1.5L4.5 16l1.5-1.5z" />
-        </svg>
-        生成 PPT
-      </button>
-    </div>
+    <!-- LangGraph Pipeline Node Modal -->
+    <PipelineGraphModal 
+      :show="showGraphModal" 
+      :steps="pipelineReactSteps" 
+      @close="showGraphModal = false" 
+    />
 
   </div>
 </template>
