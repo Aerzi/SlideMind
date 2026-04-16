@@ -32,7 +32,7 @@ function plainTextToMarkdownBody(text: string, title: string) {
   return head + t
 }
 
-async function pdfArrayBufferToMarkdown(data: ArrayBuffer, fileName: string) {
+async function pdfArrayBufferToMarkdown(data: ArrayBuffer, fileName: string, onProgress?: (progress: number) => void) {
   ensurePdfWorker()
   const pdf = await getDocument({ data: new Uint8Array(data) }).promise
   const lines: string[] = [`# ${stripExtension(fileName)}`, '']
@@ -48,6 +48,9 @@ async function pdfArrayBufferToMarkdown(data: ArrayBuffer, fileName: string) {
       lines.push(`## 第 ${i} 页`, '', pageText || '_（本页无提取到文本）_', '')
     } else {
       lines.push(pageText || '_（无文本内容）_', '')
+    }
+    if (onProgress) {
+      onProgress(Math.round((i / pdf.numPages) * 100))
     }
   }
   return lines.join('\n').trim()
@@ -193,7 +196,7 @@ export function formatFileSize(bytes: number): string {
 /**
  * Reads a user file in the browser and returns Markdown suitable for downstream AI / preview.
  */
-export async function fileToMarkdown(file: File): Promise<string> {
+export async function fileToMarkdown(file: File, onProgress?: (progress: number) => void): Promise<string> {
   const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
   const buf = await file.arrayBuffer()
 
@@ -226,7 +229,7 @@ export async function fileToMarkdown(file: File): Promise<string> {
       }
       break
     case 'pdf':
-      markdown = await pdfArrayBufferToMarkdown(buf, file.name)
+      markdown = await pdfArrayBufferToMarkdown(buf, file.name, onProgress)
       break
     case 'ppt':
     case 'pps':

@@ -45,7 +45,12 @@ async function onUploadInputChange(e: Event) {
     uploadedFiles.value.push(entry)
 
     try {
-      const markdown = await fileToMarkdown(file)
+      const markdown = await fileToMarkdown(file, (progress) => {
+        const idx = uploadedFiles.value.findIndex((f) => f.id === id)
+        if (idx !== -1) {
+          uploadedFiles.value[idx].progress = progress
+        }
+      })
       const idx = uploadedFiles.value.findIndex((f) => f.id === id)
       if (idx !== -1) {
         uploadedFiles.value[idx] = {
@@ -186,37 +191,59 @@ onUnmounted(() => {
               </svg>
             </button>
             
-            <FileTypeBadge :kind="file.kind" size="md" :loading="file.parseStatus === 'parsing'" />
-            
-            <!-- 文件信息 -->
-            <div class="flex flex-col overflow-hidden w-full gap-0.5">
-              <span class="text-[13px] text-gray-700 font-medium truncate leading-tight">
-                {{ file.name }}
-              </span>
-              <span class="text-[11px] text-gray-400 font-normal tracking-wide">
-                {{ file.size }}
-              </span>
-              <span
-                v-if="file.parseStatus === 'parsing'"
-                class="text-[11px] text-[#146bf7] font-medium flex items-center gap-1.5"
-              >
-                <span class="inline-block h-1 w-1 rounded-full bg-[#146bf7] animate-pulse" aria-hidden="true" />
-                正在解析为 Markdown…
-              </span>
-              <span
-                v-else-if="file.parseStatus === 'ready'"
-                class="text-[11px] text-emerald-600 font-medium"
-              >
-                已解析 · Markdown {{ file.markdown.length.toLocaleString() }} 字
-              </span>
-              <span
-                v-else-if="file.parseStatus === 'error'"
-                class="text-[11px] text-red-500 font-medium truncate"
-                :title="file.parseError"
-              >
-                {{ file.parseError }}
-              </span>
-            </div>
+            <template v-if="file.kind === 'pdf' && file.parseStatus === 'parsing'">
+              <!-- 演示AI风格的Loading占位符 -->
+              <div class="flex items-center gap-3 w-full">
+                <div class="w-9 h-9 rounded-lg bg-[#c83c3c] flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden">
+                  <div class="absolute inset-0 bg-black/5 w-full h-full"></div>
+                  <!-- Logo (dp style) -->
+                  <svg class="w-5 h-5 text-white z-10" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12.5 5a4.5 4.5 0 0 0-4.49 4h-1.5a2.5 2.5 0 0 0 0 5h1.5A4.5 4.5 0 0 0 12.5 18a4.5 4.5 0 0 0 4.49-4h1.5a2.5 2.5 0 0 0 0-5h-1.5A4.5 4.5 0 0 0 12.5 5zm0 2.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/>
+                  </svg>
+                </div>
+                <div class="flex flex-col overflow-hidden w-full gap-0.5 justify-center">
+                  <span class="text-[13px] text-gray-800 font-medium truncate leading-tight">
+                    【演示AI】私有文档生成...
+                  </span>
+                  <span class="text-[12px] text-gray-400 font-medium mt-0.5">
+                    {{ file.progress || 0 }}%
+                  </span>
+                </div>
+              </div>
+            </template>
+            <template v-else>
+              <FileTypeBadge :kind="file.kind" size="md" :loading="file.parseStatus === 'parsing'" />
+              
+              <!-- 文件信息 -->
+              <div class="flex flex-col overflow-hidden w-full gap-0.5">
+                <span class="text-[13px] text-gray-700 font-medium truncate leading-tight">
+                  {{ file.name }}
+                </span>
+                <span class="text-[11px] text-gray-400 font-normal tracking-wide">
+                  {{ file.size }}
+                </span>
+                <span
+                  v-if="file.parseStatus === 'parsing'"
+                  class="text-[11px] text-[#146bf7] font-medium flex items-center gap-1.5"
+                >
+                  <span class="inline-block h-1 w-1 rounded-full bg-[#146bf7] animate-pulse" aria-hidden="true" />
+                  正在解析为 Markdown…
+                </span>
+                <span
+                  v-else-if="file.parseStatus === 'ready'"
+                  class="text-[11px] text-emerald-600 font-medium"
+                >
+                  已解析 · Markdown {{ file.markdown.length.toLocaleString() }} 字
+                </span>
+                <span
+                  v-else-if="file.parseStatus === 'error'"
+                  class="text-[11px] text-red-500 font-medium truncate"
+                  :title="file.parseError"
+                >
+                  {{ file.parseError }}
+                </span>
+              </div>
+            </template>
           </div>
         </div>
 

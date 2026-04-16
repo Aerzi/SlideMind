@@ -19,4 +19,5 @@ export interface UploadedFile {
   markdown: string
   parseStatus: 'parsing' | 'ready' | 'error'
   parseError?: string
+  progress?: number
 }
