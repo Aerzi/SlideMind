@@ -12,7 +12,7 @@ export type DocumentParseAgentStep = {
     icon: string; 
     label: string; 
     content: string; 
-    tags?: { type: 'word' | 'pdf' | 'text' | 'presentation' | 'spreadsheet' | 'wps_smart' | 'markdown' | 'web', text: string }[] 
+    tags?: { type: 'word' | 'pdf' | 'text' | 'presentation' | 'spreadsheet' | 'wps_smart' | 'markdown' | 'web' | 'smzdm' | 'red_star' | 'yiche' | 'expand', text: string }[] 
   }[]
   result?: string
   startTimeMs?: number

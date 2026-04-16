@@ -228,7 +228,12 @@ function applyPipelineProgress({ node, state }: PptOutlineProgressEvent) {
   scrollToBottom()
 }
 
-function togglePipelineReactExpand(stepId: number) {
+function togglePipelineStepExpand(stepId: number) {
+  const step = pipelineSteps.value.find((s) => s.id === stepId)
+  if (step) {
+    step.isExpanded = !step.isExpanded
+  }
+}
   const s = pipelineReactSteps.value.find((x) => x.id === stepId)
   if (s) s.isExpanded = !s.isExpanded
 }
@@ -482,26 +487,58 @@ async function runPipeline(mode: 'confirm' | 'skip') {
       thought_title: '已完成思考',
       showThought: false,
       startTimeMs: Date.now(),
-    },
-    {
+    }
+  ]
+  
+  messages.value.push({ type: 'pipeline_trace' })
+
+  // 模拟第一个步骤的完成
+  setTimeout(() => {
+    const pSteps = pipelineSteps.value
+    if (pSteps[0]) {
+      pSteps[0].status = 'completed'
+      pSteps[0].elapsedMs = Date.now() - (pSteps[0].startTimeMs || Date.now())
+      pSteps[0].isExpanded = false
+    }
+
+    // 添加并启动第二个步骤：深度检索
+    pSteps.push({
       id: 101,
       title: '深度检索',
-      status: 'pending',
-      isExpanded: false,
-      description: '现在我将开始搜索私域文档以及联网资料信息，作为补充内容丰富进一步 PPT 内容。',
+      status: 'running',
+      isExpanded: true,
+      startTimeMs: Date.now(),
+      description: '现在我将开始搜索小米 SU7 Ultra 最新配置/版本/价格/关键数据与舆情等资料信息，作为补充内容丰富进一步 PPT 内容',
       thought_title: '已完成思考',
       showThought: false,
-      actions: [
-        { 
+      actions: []
+    })
+    scrollToBottom()
+
+    // 步骤二的 Action 1
+    setTimeout(() => {
+      const pSteps = pipelineSteps.value
+      const step101 = pSteps.find(s => s.id === 101)
+      if (step101 && step101.actions) {
+        step101.actions.push({ 
           icon: 'search', 
           label: '文档检索', 
           content: '正在检索“小米 SU7 Ultra 最新配置与版本信息”',
           tags: [
             { type: 'word', text: '小米 SU7 Ultra 最新配置说明' },
-            { type: 'pdf', text: '小米 SU7 Ultra 白皮书' }
+            { type: 'word', text: '小米 SU7 Ultra 白皮书' }
           ]
-        },
-        { 
+        })
+        scrollToBottom()
+      }
+    }, 1500)
+
+    // 步骤二的 Action 2
+    setTimeout(() => {
+      const pSteps = pipelineSteps.value
+      const step101 = pSteps.find(s => s.id === 101)
+      if (step101 && step101.actions) {
+        step101.actions.push({ 
           icon: 'search', 
           label: '文档检索', 
           content: '正在检索“小米 SU7 Ultra 价格汇总报告”',
@@ -509,39 +546,117 @@ async function runPipeline(mode: 'confirm' | 'skip') {
             { type: 'word', text: '小米 SU7 Ultra 价格汇总报告' },
             { type: 'presentation', text: '2023全年塑料市场分析报告汇总' }
           ]
-        },
-        { 
+        })
+        scrollToBottom()
+      }
+    }, 3500)
+
+    // 步骤二的 Action 3
+    setTimeout(() => {
+      const pSteps = pipelineSteps.value
+      const step101 = pSteps.find(s => s.id === 101)
+      if (step101 && step101.actions) {
+        step101.actions.push({ 
           icon: 'search', 
           label: '联网搜索', 
-          content: '正在搜索“小米 SU7 Ultra”\n私域信息充分，无需公域信息补充' 
-        }
-      ]
-    },
-    {
+          content: '正在搜索“小米 SU7 Ultra”',
+          tags: [
+            { type: 'smzdm', text: 'post.m.smzdm' },
+            { type: 'red_star', text: 'finance.stockstar' },
+            { type: 'web', text: 'storage.djyanbao' },
+            { type: 'red_star', text: 'finance.stockstar' },
+            { type: 'yiche', text: 'news.yiche' },
+            { type: 'web', text: 'storage.djyanbao' },
+            { type: 'smzdm', text: 'post.m.smzdm' },
+            { type: 'expand', text: '展开' }
+          ]
+        })
+        scrollToBottom()
+      }
+    }, 5500)
+
+    // 步骤二结束
+    setTimeout(() => {
+      const pSteps = pipelineSteps.value
+      const step101 = pSteps.find(s => s.id === 101)
+      if (step101) {
+        step101.status = 'completed'
+        step101.elapsedMs = Date.now() - (step101.startTimeMs || Date.now())
+        step101.isExpanded = false
+        step101.result = '数据搜集完成。现在开始为您生成专业的调研报告PPT，涵盖产品定位、性能参数、市场表现、用户反馈和竞品对比等核心内容。'
+        scrollToBottom()
+      }
+    }, 7500)
+    
+  }, 1000)
+
+  // 模拟第三个步骤的添加
+  setTimeout(() => {
+    const pSteps = pipelineSteps.value
+    pSteps.push({
       id: 102,
       title: '内容整合',
-      status: 'pending',
-      isExpanded: false,
-      description: '我已经完成信息的检索，整理出结构化报告，涵盖核心内容。我将基于收集到的丰富信息，开始生成幻灯片大纲。',
+      status: 'running',
+      isExpanded: true,
+      startTimeMs: Date.now(),
+      description: '我已完成小米 SU7 Ultra 最新配置/版本/价格/关键数据与舆情等资料信息的收集，整理出结构化报告，涵盖产品定位、性能参数、市场表现、用户反馈和竞品对比等核心内容，我将基于收集到的丰富信息，开始生成幻灯片大纲。',
       thought_title: '已完成思考',
       showThought: false,
-      actions: [
-        { icon: 'idea', label: '生成草稿', content: '整理结构化内容' },
-        { icon: 'document', label: '生成草稿', content: '小米 SU7 Ultra 调研报告_大纲.xml' }
-      ]
-    },
-    {
+      actions: []
+    })
+    scrollToBottom()
+
+    // 步骤三的 Action
+    setTimeout(() => {
+      const pSteps = pipelineSteps.value
+      const step102 = pSteps.find(s => s.id === 102)
+      if (step102 && step102.actions) {
+        step102.actions.push({ icon: 'document', label: '生成草稿', content: '小米 SU7 Ultra 调研报告_大纲.xml' })
+        scrollToBottom()
+      }
+    }, 1500)
+    
+    // 步骤三结束
+    setTimeout(() => {
+      const pSteps = pipelineSteps.value
+      const step102 = pSteps.find(s => s.id === 102)
+      if (step102) {
+        step102.status = 'completed'
+        step102.elapsedMs = Date.now() - (step102.startTimeMs || Date.now())
+        step102.isExpanded = false
+      }
+    }, 3000)
+  }, 9000)
+
+  // 模拟第四个步骤的添加
+  setTimeout(() => {
+    const pSteps = pipelineSteps.value
+    pSteps.push({
       id: 103,
       title: '大纲生成',
-      status: 'pending',
-      isExpanded: false,
+      status: 'running',
+      isExpanded: true,
+      startTimeMs: Date.now(),
       description: '现在我将进入大纲生成阶段，将文档信息和意图结果传递给 OutlineAgent。',
       thought_title: '已完成思考',
       showThought: false,
       action: { icon: 'document', label: 'PPT 大纲', content: '正在撰写 PPT 大纲...' },
-    }
-  ]
-  messages.value.push({ type: 'pipeline_trace' })
+    })
+    scrollToBottom()
+
+    // 步骤四结束（也就是所有步骤结束）
+    setTimeout(() => {
+      const pSteps = pipelineSteps.value
+      const step103 = pSteps.find(s => s.id === 103)
+      if (step103) {
+        step103.status = 'completed'
+        step103.elapsedMs = Date.now() - (step103.startTimeMs || Date.now())
+        step103.isExpanded = false
+        step103.result = '完美！OutlineAgent 已成功生成 PPT 大纲，内容结构清晰完整。大纲已生成完毕，整个 PPT 制作流程顺利完成！您可以基于此大纲进行后续的 PPT 制作工作。'
+        scrollToBottom()
+      }
+    }, 3000)
+  }, 12500)
 
   initPipelineReactSteps()
   try {
@@ -588,14 +703,6 @@ async function runPipeline(mode: 'confirm' | 'skip') {
     })
   } finally {
     pipelineRunning.value = false
-    if (pipelineSteps.value.length === 4) {
-      const last = pipelineSteps.value[3]
-      if (last.status === 'running') {
-        last.status = 'completed'
-        last.elapsedMs = Date.now() - (last.startTimeMs || Date.now())
-        last.result = '完美！OutlineAgent 已成功生成 PPT 大纲，内容结构清晰完整。大纲已生成完毕，整个 PPT 制作流程顺利完成！您可以基于此大纲进行后续的 PPT 制作工作。'
-      }
-    }
     scrollToBottom()
   }
 }

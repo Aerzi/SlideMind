@@ -180,12 +180,31 @@ const totalDuration = computed(() => {
                 </div>
                 
                 <div v-if="act.tags && act.tags.length > 0" class="flex flex-wrap gap-2 px-1 mb-1 relative z-20">
-                  <div v-for="(tag, tIdx) in act.tags" :key="tIdx" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-[#e5e7eb] rounded-md shadow-sm">
-                    <FileTypeBadge v-if="tag.type !== 'web'" :kind="tag.type" size="sm" class="w-[14px] h-[14px] rounded-[3px] text-[9px]" />
-                    <div v-else class="w-[14px] h-[14px] bg-[#10b981] rounded-[3px] flex items-center justify-center shrink-0">
-                      <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
-                    </div>
-                    <span class="text-[13px] text-[#4b5563] truncate max-w-[200px]">{{ tag.text }}</span>
+                  <div v-for="(tag, tIdx) in act.tags" :key="tIdx" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e5e7eb] rounded-full shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+                    <template v-if="tag.text !== '展开'">
+                      <!-- Word icon -->
+                      <div v-if="tag.type === 'word'" class="w-[14px] h-[14px] bg-[#2b579a] rounded-full flex items-center justify-center shrink-0">
+                        <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M15.5 3H4.5C3.67 3 3 3.67 3 4.5v15c0 .83.67 1.5 1.5 1.5h15c.83 0 1.5-.67 1.5-1.5V9l-5.5-6zm-1.62 13.92H12l-1.5-4.14-1.5 4.14H7.12l2.64-6.51-2.48-6.15h1.86l1.36 3.86 1.36-3.86h1.86l-2.48 6.15 2.64 6.51z"/></svg>
+                      </div>
+                      <!-- Web icon (globe) -->
+                      <div v-else-if="tag.type === 'web'" class="w-[14px] h-[14px] bg-[#9ca3af] rounded-full flex items-center justify-center shrink-0">
+                        <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                      </div>
+                      <!-- Web icon (red star) -->
+                      <div v-else-if="tag.type === 'red_star'" class="w-[14px] h-[14px] bg-[#ef4444] rounded-full flex items-center justify-center shrink-0">
+                        <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                      </div>
+                      <!-- Web icon (yiche) -->
+                      <div v-else-if="tag.type === 'yiche'" class="w-[14px] h-[14px] bg-red-600 rounded-full flex items-center justify-center shrink-0">
+                        <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 4.5l6.5 13h-13L12 6.5zM12 11l-3 6h6l-3-6z"/></svg>
+                      </div>
+                      <!-- Web icon (smzdm red) -->
+                      <div v-else-if="tag.type === 'smzdm'" class="w-[14px] h-[14px] bg-[#ef4444] rounded-full flex items-center justify-center shrink-0 text-[8px] text-white font-bold tracking-tighter italic">
+                        值
+                      </div>
+                    </template>
+                    <span class="text-[13px] text-[#4b5563] truncate max-w-[200px]" :class="tag.text === '展开' ? 'text-gray-500' : ''">{{ tag.text }}</span>
+                    <svg v-if="tag.text === '展开'" class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                   </div>
                 </div>
               </div>
