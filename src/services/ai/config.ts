@@ -3,6 +3,16 @@
  * 本地开发：复制 .env.example 为 .env.local 并填写密钥。
  */
 export function getAiConfig() {
+  const useInternalApi = localStorage.getItem('USE_INTERNAL_API') === 'true'
+  
+  if (useInternalApi) {
+    return {
+      baseUrl: 'http://10.213.47.79:1234/v1',
+      apiKey: '{BB949A92-3A7E-4850-B544-355E39048B24}',
+      defaultModel: 'Doubao-Seed-1.8',
+    }
+  }
+
   const baseUrl = (import.meta.env.VITE_AI_BASE_URL ?? 'https://api2.gemai.cc/v1').replace(
     /\/?$/,
     '',
@@ -19,6 +29,9 @@ export function getAiConfig() {
 }
 
 export function assertApiKeyConfigured() {
+  const useInternalApi = localStorage.getItem('USE_INTERNAL_API') === 'true'
+  if (useInternalApi) return
+
   const { apiKey } = getAiConfig()
   if (!apiKey.trim()) {
     throw new Error(

@@ -97,6 +97,27 @@ function fileUploadCardClass(file: UploadedFile) {
   return 'bg-[#f7f8fa] border border-transparent hover:border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
 }
 
+const useInternalApi = ref(localStorage.getItem('USE_INTERNAL_API') === 'true')
+
+const toastMessage = ref('')
+const showToast = ref(false)
+let toastTimer: any = null
+
+const showToastMessage = (msg: string) => {
+  toastMessage.value = msg
+  showToast.value = true
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => {
+    showToast.value = false
+  }, 2500)
+}
+
+const toggleApi = () => {
+  useInternalApi.value = !useInternalApi.value
+  localStorage.setItem('USE_INTERNAL_API', String(useInternalApi.value))
+  showToastMessage(useInternalApi.value ? '已切换至公司内网 API (Doubao)' : '已切换至外部通用 API')
+}
+
 // Close menu when clicking outside
 const handleClickOutside = (event: MouseEvent) => {
   if (uploadMenuRef.value && !uploadMenuRef.value.contains(event.target as Node)) {
@@ -142,9 +163,14 @@ onUnmounted(() => {
           </svg>
           历史创作
         </button>
-        <div class="w-8 h-8 rounded-full bg-orange-200 overflow-hidden cursor-pointer flex items-center justify-center">
+        <div 
+          @click="toggleApi"
+          class="w-8 h-8 rounded-full overflow-hidden cursor-pointer flex items-center justify-center transition-all"
+          :class="useInternalApi ? 'bg-blue-100 ring-2 ring-blue-400' : 'bg-orange-200'"
+          :title="useInternalApi ? '当前: 公司内网 API (Doubao)' : '当前: 外部通用 API'"
+        >
           <!-- Avatar placeholder -->
-          <svg class="w-6 h-6 text-orange-500 mt-1.5" fill="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6 mt-1.5 transition-colors" :class="useInternalApi ? 'text-blue-500' : 'text-orange-500'" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
           </svg>
         </div>
@@ -402,6 +428,18 @@ onUnmounted(() => {
       :files="uploadedFiles"
       @back="isAnalyzing = false"
     />
+
+    <!-- Toast Notification -->
+    <div 
+      class="fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300"
+      :class="showToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'"
+    >
+      <div class="bg-gray-800 text-white px-4 py-2.5 rounded-full shadow-lg text-[14px] flex items-center gap-2 font-medium">
+        <svg v-if="useInternalApi" class="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z"/></svg>
+        <svg v-else class="w-4 h-4 text-orange-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z"/></svg>
+        {{ toastMessage }}
+      </div>
+    </div>
   </div>
 </template>
 
