@@ -849,12 +849,11 @@ onMounted(() => {
                   >
                     <span class="flex items-center justify-center w-4 h-4" style="line-height: 0;">
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <style>.kd-stroke-width-icon-regular{stroke-width:1px;}.kd-color-icon-primary{fill:#333333;stroke:#333333;}</style>
-                        <g class="kd-color-icon-primary kd-stroke-width-icon-regular">
+                        <g style="fill:#333333;stroke:#333333;stroke-width:1px;">
                           <path d="M10.3047 6.23047L12.6673 8.59313" stroke-linejoin="round" fill="none" vector-effect="non-scaling-stroke"></path>
                           <path d="M11.829 4.6688L5.02951 11.1047C4.74251 11.3764 4.54241 11.727 4.45449 12.1122L4.00442 14.0842C3.95529 14.2995 4.14768 14.4923 4.36304 14.4436L6.39867 13.9835C6.74729 13.9047 7.06842 13.7339 7.32866 13.489L14.148 7.06928C14.5587 6.68261 14.5685 6.03293 14.1697 5.63405L13.2236 4.68795C12.8406 4.30499 12.2224 4.2965 11.829 4.6688Z" stroke-linecap="round" stroke-linejoin="round" fill="none" vector-effect="non-scaling-stroke"></path>
                         </g>
-                        <g class="kd-color-icon-primary kd-stroke-width-icon-regular">
+                        <g style="fill:#333333;stroke:#333333;stroke-width:1px;">
                           <path d="M3.5 3C3.58821 3 3.66236 3.06578 3.68281 3.15159C3.77213 3.52625 3.82562 3.73318 3.9082 3.91602C4.14383 4.43734 4.56176 4.85504 5.08301 5.09082C5.26559 5.17339 5.47246 5.22675 5.84644 5.31595C5.93285 5.33656 6 5.41117 6 5.5C6 5.58824 5.93322 5.66237 5.8474 5.68288C5.47271 5.77241 5.26578 5.82653 5.08301 5.90918C4.56176 6.14496 4.14383 6.56266 3.9082 7.08398C3.82569 7.26666 3.77205 7.47335 3.68284 7.84739C3.66236 7.93322 3.58824 8 3.5 8C3.41117 8 3.33657 7.93284 3.31599 7.84643C3.22711 7.4731 3.17423 7.26647 3.0918 7.08398C2.85617 6.56266 2.43823 6.14496 1.91699 5.90918C1.73407 5.82646 1.52688 5.77249 1.15158 5.68286C1.06578 5.66237 1 5.58821 1 5.5C1 5.4112 1.06616 5.33656 1.15253 5.31597C1.52714 5.22667 1.73425 5.17346 1.91699 5.09082C2.43824 4.85504 2.85617 4.43734 3.0918 3.91602C3.1743 3.73337 3.22703 3.5265 3.31601 3.15254C3.33657 3.06616 3.41121 3 3.5 3Z" stroke="none"></path>
                           <path d="M7.5 0.5C7.57057 0.5 7.62989 0.552627 7.64625 0.62127C7.7177 0.920997 7.76049 1.08654 7.82656 1.23281C8.01506 1.64987 8.34941 1.98403 8.76641 2.17266C8.91247 2.23871 9.07797 2.2814 9.37715 2.35276C9.44628 2.36925 9.5 2.42894 9.5 2.5C9.5 2.5706 9.44658 2.6299 9.37792 2.6463C9.07817 2.71793 8.91262 2.76122 8.76641 2.82734C8.34941 3.01597 8.01506 3.35013 7.82656 3.76719C7.76055 3.91333 7.71764 4.07868 7.64627 4.37791C7.62989 4.44658 7.57059 4.5 7.5 4.5C7.42894 4.5 7.36925 4.44627 7.35279 4.37715C7.28169 4.07848 7.23938 3.91318 7.17344 3.76719C6.98494 3.35013 6.65059 3.01597 6.23359 2.82734C6.08725 2.76116 5.92151 2.71799 5.62126 2.64629C5.55262 2.62989 5.5 2.57057 5.5 2.5C5.5 2.42896 5.55292 2.36925 5.62203 2.35277C5.92171 2.28133 6.0874 2.23877 6.23359 2.17266C6.65059 1.98403 6.98494 1.64987 7.17344 1.23281C7.23944 1.0867 7.28162 0.921202 7.35281 0.622035C7.36925 0.552929 7.42896 0.5 7.5 0.5Z" stroke="none"></path>
                         </g>
@@ -879,11 +878,10 @@ onMounted(() => {
                   <div 
                     v-if="isOptimized"
                     @click="discardOptimization"
-                    class="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-md bg-white border border-gray-200 text-gray-500 text-[13px] cursor-pointer hover:bg-gray-50 hover:text-red-500 transition-colors align-middle shadow-sm"
+                    class="inline-flex items-center gap-1 ml-2 px-2 py-[2px] rounded-md bg-white border border-gray-200 text-gray-500 text-[13px] cursor-pointer hover:bg-gray-50 hover:text-red-500 transition-colors align-middle shadow-sm"
                   >
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                      <style>.kd-stroke-width-icon-regular{stroke-width:1px;}.kd-color-icon-primary{fill:#6b7280;stroke:#6b7280;}</style>
-                      <g class="kd-color-icon-primary kd-stroke-width-icon-regular">
+                      <g style="fill:#6b7280;stroke:#6b7280;stroke-width:1px;">
                         <path d="M10.3047 6.23047L12.6673 8.59313" stroke-linejoin="round" fill="none" vector-effect="non-scaling-stroke"></path>
                         <path d="M11.829 4.6688L5.02951 11.1047C4.74251 11.3764 4.54241 11.727 4.45449 12.1122L4.00442 14.0842C3.95529 14.2995 4.14768 14.4923 4.36304 14.4436L6.39867 13.9835C6.74729 13.9047 7.06842 13.7339 7.32866 13.489L14.148 7.06928C14.5587 6.68261 14.5685 6.03293 14.1697 5.63405L13.2236 4.68795C12.8406 4.30499 12.2224 4.2965 11.829 4.6688Z" stroke-linecap="round" stroke-linejoin="round" fill="none" vector-effect="non-scaling-stroke"></path>
                       </g>
