@@ -234,9 +234,6 @@ function togglePipelineStepExpand(stepId: number) {
     step.isExpanded = !step.isExpanded
   }
 }
-  const s = pipelineReactSteps.value.find((x) => x.id === stepId)
-  if (s) s.isExpanded = !s.isExpanded
-}
 
 function togglePipelineStageDetail(stepId: number) {
   const s = pipelineReactSteps.value.find((x) => x.id === stepId)
